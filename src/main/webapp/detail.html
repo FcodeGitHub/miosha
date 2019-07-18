@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- 上述3个meta标签*必须*放在最前面，任何其他内容都*必须*跟随其后！ -->
+    <title>Bootstrap 101 Template</title>
+
+    <!-- Bootstrap -->
+    <script src="js/jquery-1.12.4.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@3.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.bootcss.com/jquery-countdown/2.1.0/css/jquery.countdown.css" rel="stylesheet">
+    <link href="https://cdn.bootcss.com/jquery-countdown/2.1.0/css/jquery.countdown.min.css" rel="stylesheet">
+    <script src="http://cdn.bootcss.com/jquery.countdown/2.1.0/jquery.countdown.min.js"></script>
+    <script src="http://cdn.bootcss.com/jquery-cookie/1.4.1/jquery.cookie.min.js"></script>
+</head>
+<body>
+<div class="container">
+    <div class="panel panel-default text-center">
+        <div class="pannel-heading">
+            <h1 id="name"></h1>
+        </div>
+
+        <div class="panel-body">
+            <h2 class="text-danger">
+
+                <span class="glyphicon glyphicon-time"></span>
+
+                <span class="glyphicon" id="seckill-box"></span>
+            </h2>
+        </div>
+    </div>
+</div>
+
+<script>
+
+    //需要获取到浏览器后面的id值，然后发送ajax请求给controller
+    function GetQueryString(name)
+    {
+        var reg = new RegExp("(^|&)"+ name +"=([^&]*)(&|$)");
+        var r = window.location.search.substr(1).match(reg);//search,查询？后面的参数，并匹配正则
+        if(r!=null)return  unescape(r[2]); return null;
+    }
+
+
+
+    $(function(){
+
+        //刚进入该页面就应该判断该用户是否登陆
+        var userPhone = $.cookie("userPhone");
+        if(null == userPhone || userPhone =='' || isNaN(userPhone)){
+            location.href="index.html";
+        }
+        var id = GetQueryString("id");
+        $.post("getSeckillById",{"id":id},function(data){
+             //alert(data);
+            $("#name").html(data.name);
+            console.log("startTime="+data.startTime+",endTime="+data.endTime);
+            var beginTime = new Date(data.startTime).getTime();
+            var stopTime = new Date(data.endTime).getTime();
+            //发送ajax请求，请求服务器时间
+            $.post("getNowTime",null,function(data){
+                 var nowTime = data;
+                 showTime(id,nowTime,beginTime,stopTime);
+            });
+        });
+    });
+
+    function showTime(seckillId,nowTime,beginTime,stopTime){
+        //根据实际情况，控制显示哪些内容
+        if(beginTime > nowTime){
+          //显示倒计时
+            //秒杀未开始,计时事件绑定
+            var kaiShiDate = new Date(beginTime);
+
+            $("#seckill-box").countdown(kaiShiDate, function (event) {
+                //时间格式
+                var format = event.strftime('秒杀倒计时: %D天 %H时 %M分 %S秒 ');
+                $("#seckill-box").html(format);
+            }).on('finish.countdown', function () {
+                //时间完成后回调事件
+                //获取秒杀地址,控制现实逻辑,执行秒杀
+                console.log('______fininsh.countdown');
+                seckillHandler(seckillId);
+            });
+        }else if(nowTime >= stopTime){
+            $("#seckill-box").html("秒杀结束");
+        }else{
+            seckillHandler(seckillId);
+        }
+    }
+
+    function seckillHandler(seckillId){
+        $("#seckill-box").hide().html("<button class='btn btn-primary' id='beginBtn' >开始秒杀</button>");
+
+        $.get("getSeckillUrl",{"seckillId":seckillId},function(data){
+
+            //http://localhost:8080/seckill?id=xxx&md5=xxxxx
+            //绑定该按钮只能点击一次
+            var url ="exeSeckill/"+data;
+            $("#beginBtn").one('click',function(){
+                //console.log("1112233");
+                //真正的秒杀接口
+                $.get(url,null,function(data){
+                    var status = data.status;
+                    var message = data.message;
+                    //if(status==0){
+                        $("#seckill-box").html(message);
+                   // }
+
+                });
+
+            });
+            $("#seckill-box").show();
+        });
+
+    }
+
+
+</script>
+
+</body>
+</html>

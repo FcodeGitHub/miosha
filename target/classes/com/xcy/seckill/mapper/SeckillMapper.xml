@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.xcy.seckill.mapper.SeckillMapper">
+
+    <resultMap id="seckillMap" type="seckill">
+        <id property="seckillId" column="seckill_id"/>
+        <result property="startTime" column="start_time"/>
+        <result property="endTime" column="end_time"/>
+        <result property="createTime" column="create_time"/>
+    </resultMap>
+
+    <select id="getSeckillList" resultMap="seckillMap">
+         select * from seckill
+    </select>
+
+    <select id="getSeckillById" resultMap="seckillMap" parameterType="long">
+         select * from seckill where seckill_id = #{id}
+    </select>
+
+    <insert id="insertSuccessKilled" parameterType="successKilled">
+        insert ignore into success_killed values (#{seckillId},#{userPhone},#{state},#{createTime})
+    </insert>
+
+    <update id="jianKuCun" parameterType="long">
+        update seckill set number=number-1
+        where seckill_id=#{id} and number>0;
+    </update>
+</mapper>
